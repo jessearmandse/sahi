@@ -5,6 +5,7 @@ from sahi.utils.file import import_model_class
 MODEL_TYPE_TO_MODEL_CLASS_NAME = {
     "mmdet": "MmdetDetectionModel",
     "yolov5": "Yolov5DetectionModel",
+    "yolov8": "Yolov8DetectionModel",
     "detectron2": "Detectron2DetectionModel",
     "huggingface": "HuggingfaceDetectionModel",
     "torchvision": "TorchVisionDetectionModel",
