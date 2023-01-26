@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from sahi.utils.cv import read_image
-from sahi.utils.yolov8 import Yolov8TestConstants, download_yolov8n_model
+from sahi.utils.yolov8 import Yolov8TestConstants
 
 MODEL_DEVICE = "cpu"
 CONFIDENCE_THRESHOLD = 0.3
@@ -12,8 +12,6 @@ IMAGE_SIZE = 320
 class TestYolov8DetectionModel(unittest.TestCase):
     def test_load_model(self):
         from sahi.models.yolov8 import Yolov8DetectionModel
-
-        download_yolov8n_model()
 
         yolov8_detection_model = Yolov8DetectionModel(
             model_path=Yolov8TestConstants.YOLOV8N_MODEL_PATH,
@@ -30,8 +28,6 @@ class TestYolov8DetectionModel(unittest.TestCase):
 
         from sahi.models.yolov8 import Yolov8DetectionModel 
 
-        download_yolov8n_model()
-
         yolo_model = YOLO(Yolov8TestConstants.YOLOV8N_MODEL_PATH)
 
         yolov8_detection_model = Yolov8DetectionModel(
@@ -46,9 +42,7 @@ class TestYolov8DetectionModel(unittest.TestCase):
 
     def test_perform_inference(self):
         from sahi.models.yolov8 import Yolov8DetectionModel
-
-        # init model
-        download_yolov8n_model()
+        from ultralytics import YOLO
 
         yolov8_detection_model = Yolov8DetectionModel(
             model_path=Yolov8TestConstants.YOLOV8N_MODEL_PATH,
@@ -59,6 +53,8 @@ class TestYolov8DetectionModel(unittest.TestCase):
             image_size=IMAGE_SIZE,
         )
 
+        yolo_model = YOLO(Yolov8TestConstants.YOLOV8N_MODEL_PATH)
+
         # prepare image
         image_path = "tests/data/small-vehicles1.jpeg"
         image = read_image(image_path)
@@ -66,6 +62,11 @@ class TestYolov8DetectionModel(unittest.TestCase):
         # perform inference
         yolov8_detection_model.perform_inference(image)
         original_predictions = yolov8_detection_model.original_predictions
+
+        results = yolo_model(image)
+        self.assertEqual(len(results), len(original_predictions))
+        for ind, r in enumerate(results):
+            self.assertTrue(r.boxes.xyxy.cpu().detach().numpy().all() == original_predictions[ind].boxes.xyxy.cpu().detach().numpy().all())
 
         boxes = original_predictions[0].boxes
         print(f'number of original predictions: {len(boxes.xyxy)}')
@@ -93,16 +94,13 @@ class TestYolov8DetectionModel(unittest.TestCase):
     def test_convert_original_predictions(self):
         from sahi.models.yolov8 import Yolov8DetectionModel
 
-        # init model
-        download_yolov8n_model()
-
         yolov8_detection_model = Yolov8DetectionModel(
             model_path=Yolov8TestConstants.YOLOV8N_MODEL_PATH,
             confidence_threshold=CONFIDENCE_THRESHOLD,
             device=MODEL_DEVICE,
             category_remapping=None,
             load_at_init=True,
-            image_size=IMAGE_SIZE,
+            image_size=IMAGE_SIZE
         )
 
         # prepare image
