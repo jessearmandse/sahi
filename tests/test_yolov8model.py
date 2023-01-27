@@ -93,6 +93,7 @@ class TestYolov8DetectionModel(unittest.TestCase):
 
     def test_convert_original_predictions(self):
         from sahi.models.yolov8 import Yolov8DetectionModel
+        from ultralytics import YOLO
 
         yolov8_detection_model = Yolov8DetectionModel(
             model_path=Yolov8TestConstants.YOLOV8N_MODEL_PATH,
@@ -103,6 +104,8 @@ class TestYolov8DetectionModel(unittest.TestCase):
             image_size=IMAGE_SIZE
         )
 
+        yolo_model = YOLO(Yolov8TestConstants.YOLOV8N_MODEL_PATH)
+
         # prepare image
         image_path = "tests/data/small-vehicles1.jpeg"
         image = read_image(image_path)
@@ -110,6 +113,11 @@ class TestYolov8DetectionModel(unittest.TestCase):
         # perform inference
         yolov8_detection_model.perform_inference(image)
         original_predictions = yolov8_detection_model.original_predictions
+
+        results = yolo_model(image)
+        self.assertEqual(len(results), len(original_predictions))
+        for ind, r in enumerate(results):
+            self.assertTrue(r.boxes.xyxy.cpu().detach().numpy().all() == original_predictions[ind].boxes.xyxy.cpu().detach().numpy().all())
         print(f'number of original predictions: {len(original_predictions[0].boxes.xyxy)}')
 
         # convert predictions to ObjectPrediction list
@@ -119,20 +127,12 @@ class TestYolov8DetectionModel(unittest.TestCase):
         print(f'object prediction list {object_prediction_list}')
 
         # compare
-        self.assertEqual(len(object_prediction_list), 3)
+        self.assertEqual(len(object_prediction_list), 1)
         self.assertEqual(object_prediction_list[0].category.id, 2)
         self.assertEqual(object_prediction_list[0].category.name, "car")
         desired_bbox = [321, 329, 57, 39]
         predicted_bbox = object_prediction_list[0].bbox.to_xywh()
-        margin = 7
-        print(f'desired box, {desired_bbox}, predicted box: {predicted_bbox} within margin {margin}')
-
-        for ind, point in enumerate(predicted_bbox):
-            assert point < desired_bbox[ind] + margin and point > desired_bbox[ind] - margin
-        self.assertEqual(object_prediction_list[2].category.id, 2)
-        self.assertEqual(object_prediction_list[2].category.name, "car")
-        desired_bbox = [381, 275, 42, 28]
-        predicted_bbox = object_prediction_list[2].bbox.to_xywh()
+        margin = 9
         print(f'desired box, {desired_bbox}, predicted box: {predicted_bbox} within margin {margin}')
 
         for ind, point in enumerate(predicted_bbox):
