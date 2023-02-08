@@ -6,6 +6,7 @@ MODEL_TYPE_TO_MODEL_CLASS_NAME = {
     "mmdet": "MmdetDetectionModel",
     "yolov5": "Yolov5DetectionModel",
     "yolov8": "Yolov8DetectionModel",
+    "yolox": "YOLOXDetectionModel",
     "detectron2": "Detectron2DetectionModel",
     "huggingface": "HuggingfaceDetectionModel",
     "torchvision": "TorchVisionDetectionModel",
