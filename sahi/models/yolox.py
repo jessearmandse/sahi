@@ -131,8 +131,8 @@ class YOLOXDetectionModel(DetectionModel):
         with torch.no_grad():
             t0 = time.time()
             outputs = self.model(img)
-            logger.info(f"outputs raw {outputs}")
-            logger.info(f"nms threshold {self.nms_threshold}, conf {self.confidence_threshold}")
+            logger.debug(f"outputs raw {outputs}")
+            logger.debug(f"nms threshold {self.nms_threshold}, conf {self.confidence_threshold}")
             outputs = postprocess(
                 outputs, self.num_classes, self.confidence_threshold,
                 self.nms_threshold, class_agnostic=True
