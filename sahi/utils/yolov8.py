@@ -5,7 +5,7 @@ from typing import Optional
 
 class Yolov8TestConstants:
     YOLOV8N_MODEL_URL = "https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt"
-    YOLOV8N_MODEL_PATH = "yolov8n.pt"
+    YOLOV8N_MODEL_PATH = "tests/data/models/yolov8/yolov8n.pt"
 
 def download_yolov8n_model(destination_path: Optional[str] = None):
 
