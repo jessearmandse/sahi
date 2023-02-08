@@ -24,17 +24,21 @@ class YOLOXDetectionModel(DetectionModel):
         model_path: Optional[str] = None,
         model: Optional[Any] = None,
         config_path: Optional[str] = None,
-        exp_path: str = "",
+        exp_path: str = None,
+        exp_name: str = "yolox-s",
         device: Optional[str] = None,
         mask_threshold: float = 0.5,
         confidence_threshold: float = 0.3,
+        nms_threshold: float = 0.45,
         category_mapping: Optional[Dict] = None,
         category_remapping: Optional[Dict] = None,
         load_at_init: bool = True,
         image_size: int = None
     ):
         self._exp_path = exp_path
-        self.preproc = ValTransform(legacy=False)
+        self._exp_name = exp_name
+        self._preproc = ValTransform(legacy=False)
+        self._nms_threshold = nms_threshold
         super().__init__(
             model_path, 
             model, 
@@ -57,10 +61,12 @@ class YOLOXDetectionModel(DetectionModel):
         from yolox.exp import get_exp
 
         try:
-            exp = get_exp(self._exp_path)
+            exp = get_exp(exp_file=self._exp_path, exp_name=self._exp_name)
             self.num_classes = exp.num_classes
-            self.confidence_threshold = exp.test_conf
-            self.nms_threshold = exp.nmsthre
+            self.nms_threshold = self._nms_threshold if self._nms_threshold < exp.nmsthre else exp.nmsthre
+
+            if self.confidence_threshold < exp.test_conf:
+                self.confidence_threshold = exp.test_conf
 
             if self.image_size is None:
                 self.image_size = exp.test_size[0] if exp.test_size[0] > exp.test_size[1] else exp.test_size[1]
@@ -108,8 +114,14 @@ class YOLOXDetectionModel(DetectionModel):
         image_size = self.image_size
 
         image_ratio = min(image_size / image.shape[0], image_size / image.shape[1])
-        logger.info(f"Preprocessing image for prediction, size: {image_size}")
-        img, _ = self.preproc(image, None, (image_size, image_size))
+        if image_ratio > 1.0:
+            preproc_image_size = (image.shape[0], image.shape[1])
+            image_ratio = 1.0
+        else:
+            preproc_image_size = (image_size, image_size)
+
+        logger.info(f"Preprocessing image for prediction, size: {preproc_image_size}")
+        img, _ = self._preproc(image, None, preproc_image_size)
         img = torch.from_numpy(img).unsqueeze(0)
         img = img.float()
         if "cuda" in self.device.type:
@@ -119,10 +131,14 @@ class YOLOXDetectionModel(DetectionModel):
         with torch.no_grad():
             t0 = time.time()
             outputs = self.model(img)
+            logger.info(f"outputs raw {outputs}")
+            logger.info(f"nms threshold {self.nms_threshold}, conf {self.confidence_threshold}")
             outputs = postprocess(
                 outputs, self.num_classes, self.confidence_threshold,
                 self.nms_threshold, class_agnostic=True
             )
+            logger.debug(f"outputs post processed {outputs}")
+            outputs = list(filter(lambda o: o is not None, outputs))
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
             predictions = []
             for output in outputs:
@@ -142,7 +158,7 @@ class YOLOXDetectionModel(DetectionModel):
                 predictions.append(prediction)
 
             self._original_predictions = predictions
-            logger.debug(f"Outputs {self.original_predictions}")
+            logger.info(f"Outputs {self.original_predictions}")
 
     def _create_object_prediction_list_from_original_predictions(
         self,
@@ -185,6 +201,9 @@ class YOLOXDetectionModel(DetectionModel):
                 x2 = prediction[2]
                 y2 = prediction[3]
                 bbox = [x1, y1, x2, y2]
+                logger.debug(f'bounding box {bbox}')
+                logger.debug(f'score: {score}')
+                logger.debug(f'category name: {category_name}')
 
                 # fix negative box coords
                 bbox[0] = max(0, bbox[0])
