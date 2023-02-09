@@ -235,7 +235,7 @@ class YOLOXDetectionModel(DetectionModel):
                 object_prediction_list.append(object_prediction)
             object_prediction_list_per_image.append(object_prediction_list)
         
-        self._object_prediction_list_per_image = object_prediction_list_per_image
+        self._object_prediction_list_per_image = object_prediction_list_per_image if len(object_prediction_list_per_image) > 0 else [[]]
     
     @property
     def original_predictions(self):
