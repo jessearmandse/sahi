@@ -101,7 +101,7 @@ class YOLOXDetectionModel(DetectionModel):
         self.model = model
 
         if not self.category_mapping:
-            category_mapping = {ind: category_name for ind, category_name in enumerate(COCO_CLASSES)}
+            category_mapping = {str(ind): category_name for ind, category_name in enumerate(COCO_CLASSES)}
             self.category_mapping = category_mapping
     
     def perform_inference(self, image: np.ndarray):
@@ -195,7 +195,7 @@ class YOLOXDetectionModel(DetectionModel):
                 classes = image_prediction["classes"]
                 score = conf_scores[boxes_ind]
                 category_id = int(classes[boxes_ind])
-                category_name = self.category_mapping[category_id]
+                category_name = self.category_mapping[str(category_id)]
                 x1 = prediction[0]
                 y1 = prediction[1]
                 x2 = prediction[2]
