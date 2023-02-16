@@ -86,17 +86,17 @@ class YOLOXDetectionModel(DetectionModel):
         if model.__class__.__module__ not in ["yolox.models.yolox"]:
             raise Exception(f"Not a YOLOX model: {type(model)}")
 
-        if "cuda" in self.device.type:
-            model.cuda()
-            model.half()
-        model.eval()
-
         if self.model_path is not None:
             ckpt = torch.load(self.model_path, map_location="cpu")
             # load the model state dict, otherwise there'll be no outputs
             model.load_state_dict(ckpt["model"])
             # fuse model by default
             model = fuse_model(model)
+
+        if "cuda" in self.device.type:
+            model.cuda()
+            model.half()
+        model.eval()
 
         self.model = model
 
